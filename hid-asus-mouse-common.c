@@ -1,10 +1,17 @@
-#include <linux/hid.h>
-#include <linux/module.h>
-#include <linux/usb.h>
+/* SPDX-License-Identifier: GPL-2.0-or-later */
 
+/*
+ * Common functions for ASUS mouse drivers
+ *
+ * Copyright (c) 2021 Kyoken <kyoken@kyoken.ninja>
+ */
+
+#include <linux/hid.h>
+#include <linux/usb.h>
+#include <linux/module.h>
 #include "hid-asus-mouse-common.h"
 
-static int asus_mouse_common_probe(struct hid_device *hdev, const struct hid_device_id *id)
+int asus_mouse_common_probe(struct hid_device *hdev, const struct hid_device_id *id)
 {
 #ifdef ASUS_MOUSE_DEBUG
 	struct usb_interface *iface = to_usb_interface(hdev->dev.parent);
@@ -51,8 +58,9 @@ static int asus_mouse_common_probe(struct hid_device *hdev, const struct hid_dev
 
 	return 0;
 }
+EXPORT_SYMBOL_GPL(asus_mouse_common_probe);
 
-static void asus_mouse_common_remove(struct hid_device *hdev)
+void asus_mouse_common_remove(struct hid_device *hdev)
 {
 	struct asus_mouse_data *drv_data = hid_get_drvdata(hdev);
 	if (drv_data != NULL) {
@@ -60,8 +68,9 @@ static void asus_mouse_common_remove(struct hid_device *hdev)
 	}
 	hid_hw_stop(hdev);
 }
+EXPORT_SYMBOL_GPL(asus_mouse_common_remove);
 
-static void asus_mouse_common_send_events(u32 bitmask[], struct asus_mouse_data *drv_data)
+void asus_mouse_common_send_events(u32 bitmask[], struct asus_mouse_data *drv_data)
 {
 	int i, bit, asus_code, key_code;
 	u32 modified;
@@ -102,3 +111,8 @@ static void asus_mouse_common_send_events(u32 bitmask[], struct asus_mouse_data 
 	for (i = 0; i < ASUS_MOUSE_DATA_KEY_STATE_NUM; i++)
 		drv_data->key_state[i] = bitmask[i];
 }
+EXPORT_SYMBOL_GPL(asus_mouse_common_send_events);
+
+MODULE_AUTHOR("Kyoken");
+MODULE_DESCRIPTION("USB ASUS mouse common driver");
+MODULE_LICENSE("GPL v2");

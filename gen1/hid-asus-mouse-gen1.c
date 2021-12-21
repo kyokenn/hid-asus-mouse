@@ -1,8 +1,14 @@
-#include <linux/hid.h>
-#include <linux/module.h>
-#include <linux/usb.h>
-/* #include "hid-ids.h" */
+// SPDX-License-Identifier: GPL-2.0+
+/*
+ * HID driver for ASUS generation 1 mice
+ *
+ * Copyright (c) 2021 Kyoken <kyoken@kyoken.ninja>
+ */
 
+#include <linux/hid.h>
+#include <linux/usb.h>
+#include <linux/module.h>
+/* #include "hid-ids.h" */
 #include "../hid-asus-mouse-common.h"
 #include "../hid-asus-mouse-common.c"
 
@@ -83,4 +89,6 @@ static struct hid_driver asus_mouse_gen1_driver = {
 };
 module_hid_driver(asus_mouse_gen1_driver);
 
+MODULE_AUTHOR("Kyoken <kyoken@kyoken.ninja>");
+MODULE_DESCRIPTION("ASUS mouse generation 1");
 MODULE_LICENSE("GPL");

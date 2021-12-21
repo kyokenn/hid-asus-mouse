@@ -139,6 +139,6 @@ static unsigned char asus_mouse_mapping[] = {
 	0,
 };
 
-static void asus_mouse_common_send_events(u32 bitmask[], struct asus_mouse_data *drv_data);
+void asus_mouse_common_send_events(u32 bitmask[], struct asus_mouse_data *drv_data);
 
 #endif
