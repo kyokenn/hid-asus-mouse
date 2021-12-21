@@ -47,7 +47,7 @@ make -C gen1 install
 Installing driver for generation 2 devices
 ------------------------------------------
 
-**WARNING!!!***
+**WARNING!!!**
 
 You don’t have to do this if you have generation 2 device!
 Keyboard events should work with generic vanilla kernel.

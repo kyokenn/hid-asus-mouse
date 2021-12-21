@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0+
 /*
- * HID driver for ASUS generation 1 mice
+ * HID driver for ASUS generation 2 mice
  *
  * Copyright (c) 2021 Kyoken <kyoken@kyoken.ninja>
  */
