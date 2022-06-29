@@ -1,66 +1,63 @@
 hid-asus-mouse
 ==============
 
-HID driver for ASUS ROG & TUF mice
-providing generation of keyboard events.
+HID driver for ASUS ROG & TUF mice providing generation of keyboard events.
 
 
 Device compatibility
 --------------------
 
-Device name                   | Generation | HID descriptor | Keyboard events
-------------------------------|------------|----------------|----------------
-**Gladius**                   | 1          | BROKEN         | needs [**gen1** driver](gen1)
-**Spatha**                    | 1          | BROKEN         | needs [**gen1** driver](gen1)
-**Strix Evolve**              | 1          | BROKEN         | needs [**gen1** driver](gen1)
-**Buzzard**                   | 1          | OK             | needs [**gen1** driver](gen1)
-**Gladius II Origin PNK LTD** | 1          | OK             | needs [**gen1** driver](gen1)
-**Gladius II Origin**         | 1          | OK             | needs [**gen1** driver](gen1)
-**Gladius II**                | 1          | OK             | needs [**gen1** driver](gen1)
-**Pugio**                     | 1          | OK             | needs [**gen1** driver](gen1)
-**Strix Carry**               | 1          | OK             | needs [**gen1** driver](gen1)
-**Strix Impact**              | 1          | OK             | needs [**gen1** driver](gen1)
-**Strix Impact II Wireless**  | 1          | OK             | needs [**gen1** driver](gen1)
-**Chakram**                   | 2          | OK             | no driver needed
-**Keris Wireless**            | 2          | OK             | no driver needed
+Device name                      | HID descriptor | Keyboard events
+---------------------------------|----------------|----------------
+**Spatha**                       | BROKEN         | ARRAY
+**Strix Evolve**                 | BROKEN         | ARRAY
+**Buzzard**                      | OK             | ARRAY
+**Gladius II**                   | OK             | ARRAY
+**Gladius II Origin**            | OK             | ARRAY
+**Gladius II Origin PNK LTD**    | OK             | ARRAY
+**Pugio**                        | OK             | ARRAY
+**Pugio II**                     | OK             | ARRAY
+**Strix Carry**                  | OK             | ARRAY
+**Strix Impact**                 | OK             | ARRAY
+**Strix Impact II Electro Punk** | OK             | ARRAY
+**Strix Impact II Wireless**     | OK             | ARRAY
+**Chakram**                      | OK             | BITMASK
+**Keris Wireless**               | OK             | BITMASK
 
-Devices with broken HID descriptors needs some fixes using kernel module, so patches are welcome.
+Devices with **BROKEN** HID descriptors needs some fixes using kernel module, so patches are welcome.
 
 You can’t change the mouse settings without descriptor fixes but keyboard events should work.
 
+Devices with keyboard events packed as **BITMASK** may not needed this driver
+and should work with vanilla kernel. **BITMASK** driver mode was made
+as reference implementation for testing and debugging purposes.
 
-Installing driver for generation 1 devices
-------------------------------------------
+All devices connected via bluetooth should also work without this driver.
 
-Building the **gen1** driver
 
+Building RPM
+------------
+
+Install build dependencies:
 ```
-make -C gen1
-```
-
-Installing the **gen1** driver
-
-```
-make -C gen1 install
-```
-
-Installing driver for generation 2 devices
-------------------------------------------
-
-**WARNING!!!**
-
-You don’t have to do this if you have generation 2 device!
-Keyboard events should work with generic vanilla kernel.
-This driver is made as reference for testing and debugging purposes.
-
-Building the **gen2** driver
-
-```
-make -C gen2
+sudo dnf build-dep hid-asusmouse-kmod.spec
 ```
 
-Installing the **gen2** driver
-
+Build RPM package:
 ```
-make -C gen2 install
+make rpm
+```
+
+
+Building DEB
+------------
+
+Install build dependencies:
+```
+sudo apt build-dep .
+```
+
+Build DEB package:
+```
+make deb
 ```
