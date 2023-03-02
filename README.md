@@ -1,38 +1,20 @@
 hid-asus-mouse
 ==============
 
-HID driver for ASUS ROG & TUF mice providing generation of keyboard events.
+**hid-asus-mouse** is a custom HID driver for ASUS ROG & TUF mice.
+It is a kernel module with a custom HID logic. It creates a virtual input device,
+which combines all the mouse and keyboard interfaces and used for event generation.
+The input device is shown at "/proc/bus/input/devices" as "ASUS mouse input".
 
 
-Device compatibility
---------------------
+Features
+--------
 
-Device name                      | HID descriptor | Keyboard events
----------------------------------|----------------|----------------
-**Spatha**                       | BROKEN         | ARRAY
-**Strix Evolve**                 | BROKEN         | ARRAY
-**Buzzard**                      | OK             | ARRAY
-**Gladius II**                   | OK             | ARRAY
-**Gladius II Origin**            | OK             | ARRAY
-**Gladius II Origin PNK LTD**    | OK             | ARRAY
-**Pugio**                        | OK             | ARRAY
-**Pugio II**                     | OK             | ARRAY
-**Strix Carry**                  | OK             | ARRAY
-**Strix Impact**                 | OK             | ARRAY
-**Strix Impact II Electro Punk** | OK             | ARRAY
-**Strix Impact II Wireless**     | OK             | ARRAY
-**Chakram**                      | OK             | BITMASK
-**Keris Wireless**               | OK             | BITMASK
-
-Devices with **BROKEN** HID descriptors needs some fixes using kernel module, so patches are welcome.
-
-You can’t change the mouse settings without descriptor fixes but keyboard events should work.
-
-Devices with keyboard events packed as **BITMASK** may not needed this driver
-and should work with vanilla kernel. **BITMASK** driver mode was made
-as reference implementation for testing and debugging purposes.
-
-All devices connected via bluetooth should also work without this driver.
+* Single virtual input device for mouse and keyboard event generation,
+so they doesn't conflict with each other.
+* Smooth wheel emulation using keypad keys: KEY_KP2, KEY_KP4, KEY_KP6, KEY_KP8.
+* Handles keyboard events from incompatible with native HID devices
+(old Gladius II generation and earlier mice in RF mode).
 
 
 Building RPM

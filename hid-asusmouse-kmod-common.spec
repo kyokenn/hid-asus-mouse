@@ -2,7 +2,7 @@
 
 Name: hid-asusmouse-kmod-common
 
-Version:        0.1.0
+Version:        0.2.0
 Release:        1%{?dist}.1
 Summary:        ASUS mouse HID kernel module
 
