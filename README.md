@@ -17,6 +17,12 @@ so they doesn't conflict with each other.
 (old Gladius II generation and earlier mice in RF mode).
 
 
+Supported devices
+-----------------
+
+[Device IDs](hid-asus-mouse.h)
+
+
 Building RPM
 ------------
 
