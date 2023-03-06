@@ -2,7 +2,7 @@ obj-m+=hid-asus-mouse.o
 KERNELDIR?=/lib/modules/$(shell uname -r)/build
 DRIVERDIR?=$(shell pwd)
 
-VERSION=0.1.0
+VERSION=0.2.0
 SRC=\
 	Makefile \
 	README.md \

@@ -44,31 +44,47 @@ static void input_repeat_key(struct timer_list *t)
 
 static void asus_mouse_handle_mouse(struct asus_mouse_data *drv_data, u8 *data, int size)
 {
-  s8 wheel;
-  s16 x, y;
-
-  if (size != ASUS_MOUSE_MOUSE_EVENT_SIZE)
-    return;
-
-  x = data[1] | (u16)data[2] << 8;
-  y = data[3] | (u16)data[4] << 8;
-  wheel = data[5];
+  s8 btn = 0;
+  s8 whl = 0;
+  s16 x = 0;
+  s16 y = 0;
 
 #ifdef ASUS_MOUSE_DEBUG
   printk(KERN_INFO "hid-asus-mouse: MOUSE %02X %02X %02X %02X %02X %02X",
          data[0], data[1], data[2], data[3], data[4], data[5]);
-  printk(KERN_INFO "hid-asus-mouse: BTN=%02X X=%d Y=%d WHL=%d",
-         data[0], x, y, wheel);
 #endif
 
-  input_report_key(drv_data->input, BTN_LEFT, (data[0] & (1 << 0)) != 0);
-  input_report_key(drv_data->input, BTN_RIGHT, (data[0] & (1 << 1)) != 0);
-  input_report_key(drv_data->input, BTN_MIDDLE, (data[0] & (1 << 2)) != 0);
-  input_report_key(drv_data->input, BTN_FORWARD, (data[0] & (1 << 3)) != 0);
-  input_report_key(drv_data->input, BTN_BACK, (data[0] & (1 << 4)) != 0);
+  switch(size) {
+  case ASUS_MOUSE_MOUSE_EVENT_SIZE:
+    btn = data[0];
+    x = data[1] | (u16)data[2] << 8;
+    y = data[3] | (u16)data[4] << 8;
+    whl = data[5];
+    break;
+
+  case ASUS_MOUSE_MOUSE_EVENT2_SIZE:
+    x = data[0] | (u16)data[1] << 8;
+    y = data[2] | (u16)data[3] << 8;
+    btn = data[4];
+    whl = data[5];
+    break;
+
+  default:
+    break;
+  }
+
+#ifdef ASUS_MOUSE_DEBUG
+  printk(KERN_INFO "hid-asus-mouse: X=%d Y=%d BTN=%02X WHL=%d", x, y, btn, whl);
+#endif
+
+  input_report_key(drv_data->input, BTN_LEFT, (btn & (1 << 0)) != 0);
+  input_report_key(drv_data->input, BTN_RIGHT, (btn & (1 << 1)) != 0);
+  input_report_key(drv_data->input, BTN_MIDDLE, (btn & (1 << 2)) != 0);
+  input_report_key(drv_data->input, BTN_FORWARD, (btn & (1 << 3)) != 0);
+  input_report_key(drv_data->input, BTN_BACK, (btn & (1 << 4)) != 0);
   input_report_rel(drv_data->input, REL_X, x);
   input_report_rel(drv_data->input, REL_Y, y);
-  input_report_rel(drv_data->input, REL_WHEEL_HI_RES, wheel * ASUS_MOUSE_MOUSE_WHEEL_RES);
+  input_report_rel(drv_data->input, REL_WHEEL_HI_RES, whl * ASUS_MOUSE_MOUSE_WHEEL_RES);
   input_sync(drv_data->input);
 }
 
