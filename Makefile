@@ -35,17 +35,19 @@ kernel_clean:
 
 # build source archive, needed by rpm and deb
 ../$(ARCHIVE): $(SRC)
-	mkdir $(SRCDIR)
+	mkdir -p $(SRCDIR)
 	cp -fv $^ $(SRCDIR)/
 	tar Jcvf $@ $(SRCDIR)
 	rm -Rf $(SRCDIR)
 
 # copies specs to rpmbuild's specs path
 ~/rpmbuild/SPECS/%.spec: %.spec
+	mkdir -p ~/rpmbuild/SPECS
 	cp -fv $^ $@
 
 # copies archive from parent directory to rpmbuild's sources path
 ~/rpmbuild/SOURCES/%.tar.xz: ../%.tar.xz
+	mkdir -p ~/rpmbuild/SOURCES
 	cp -fv $^ $@
 
 rpm: \

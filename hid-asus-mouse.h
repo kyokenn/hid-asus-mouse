@@ -11,7 +11,8 @@
 #define USB_DEVICE_ID_ASUSTEK_ROG_BUZZARD 0x1816
 #define USB_DEVICE_ID_ASUSTEK_ROG_CHAKRAM_RF 0x18e5
 #define USB_DEVICE_ID_ASUSTEK_ROG_CHAKRAM_USB 0x18e3
-#define USB_DEVICE_ID_ASUSTEK_ROG_CHAKRAM_X 0x1a1a
+#define USB_DEVICE_ID_ASUSTEK_ROG_CHAKRAM_X_RF 0x1a1a
+#define USB_DEVICE_ID_ASUSTEK_ROG_CHAKRAM_X_USB 0x1a18
 #define USB_DEVICE_ID_ASUSTEK_ROG_GLADIUS2 0x1845
 #define USB_DEVICE_ID_ASUSTEK_ROG_GLADIUS2_CORE 0x18dd
 #define USB_DEVICE_ID_ASUSTEK_ROG_GLADIUS2_ORIGIN 0x1877
@@ -40,20 +41,22 @@
 
 /* #define ASUS_MOUSE_DEBUG 1 */
 
-#define ASUS_MOUSE_MOUSE_EVENT_SIZE 6
-#define ASUS_MOUSE_MOUSE_EVENT2_SIZE 11
-#define ASUS_MOUSE_KEYS_ARRAY_EVENT_SIZE 9
-#define ASUS_MOUSE_KEYS_ARRAY_EVENT2_SIZE 8
 #define ASUS_MOUSE_KEYS_BITMASK_EVENT_SIZE 17
 
 #define ASUS_MOUSE_MOUSE_WHEEL_RES 120  /* generic mouse wheel resolution */
 #define ASUS_MOUSE_KP_WHEEL_RES 30  /* keypad emulated wheel resolution */
+#define ASUS_MOUSE_JOYSTICK_DEADZONE 16
 
 #define ASUS_MOUSE_DATA_KEY_STATE_BITS 32  /* size of "key_state" item in bits */
 #define ASUS_MOUSE_DATA_KEY_STATE_NUM 4  /* number of "key_state" items */
 struct asus_mouse_data {
 	struct input_dev *input;
 	__u32 key_state[ASUS_MOUSE_DATA_KEY_STATE_NUM];
+};
+
+struct asus_mouse_joystick {
+  int x;
+	int y;
 };
 
 #define ASUS_MOUSE_MAPPING_SIZE 98

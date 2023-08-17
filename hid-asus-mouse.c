@@ -14,6 +14,7 @@
 #include "hid-asus-mouse.h"
 
 static struct input_dev *asus_mouse_input;
+static struct asus_mouse_joystick asus_mouse_joystick;
 
 static void input_repeat_key(struct timer_list *t)
 {
@@ -35,10 +36,17 @@ static void input_repeat_key(struct timer_list *t)
   default:
     break;
   }
+
+  if (asus_mouse_joystick.x)
+    input_report_rel(asus_mouse_input, REL_HWHEEL_HI_RES, asus_mouse_joystick.x / 4);
+
+  if (asus_mouse_joystick.y)
+    input_report_rel(asus_mouse_input, REL_WHEEL_HI_RES, asus_mouse_joystick.y / -4);
+
   input_sync(asus_mouse_input);
 
   ms = asus_mouse_input->rep[REP_PERIOD];
-  if (asus_mouse_input->repeat_key && ms)
+  if (ms && (asus_mouse_input->repeat_key || asus_mouse_joystick.x || asus_mouse_joystick.y))
     mod_timer(&asus_mouse_input->timer, jiffies + msecs_to_jiffies(ms));
 }
 
@@ -50,19 +58,26 @@ static void asus_mouse_handle_mouse(struct asus_mouse_data *drv_data, u8 *data, 
   s16 y = 0;
 
 #ifdef ASUS_MOUSE_DEBUG
-  printk(KERN_INFO "hid-asus-mouse: MOUSE %02X %02X %02X %02X %02X %02X",
-         data[0], data[1], data[2], data[3], data[4], data[5]);
+  if (size == 6) {
+    printk(KERN_INFO "hid-asus-mouse: MOUSE %02X %02X %02X %02X %02X %02X",
+           data[0], data[1], data[2], data[3], data[4], data[5]);
+  } else if (size == 11) {
+    printk(KERN_INFO "hid-asus-mouse: MOUSE %02X %02X %02X %02X %02X %02X %02X %02X",
+           data[0], data[1], data[2], data[3], data[4], data[5], data[6], data[7]);
+    printk(KERN_INFO "                      %02X %02X %02X",
+           data[8], data[9], data[10]);
+  }
 #endif
 
   switch(size) {
-  case ASUS_MOUSE_MOUSE_EVENT_SIZE:
+  case 6:
     btn = data[0];
     x = data[1] | (u16)data[2] << 8;
     y = data[3] | (u16)data[4] << 8;
     whl = data[5];
     break;
 
-  case ASUS_MOUSE_MOUSE_EVENT2_SIZE:
+  case 11:
     x = data[0] | (u16)data[1] << 8;
     y = data[2] | (u16)data[3] << 8;
     btn = data[4];
@@ -99,37 +114,12 @@ static void asus_mouse_handle_keyboard(struct asus_mouse_data *drv_data, u8 *dat
   /* build bitmask */
 
 	switch(size) {
-  case ASUS_MOUSE_KEYS_ARRAY_EVENT_SIZE:
-  case ASUS_MOUSE_KEYS_ARRAY_EVENT2_SIZE:
-    /* build bitmask from array of active key codes */
-#ifdef ASUS_MOUSE_DEBUG
-    if (size == 9)
-      printk(KERN_INFO "hid-asus-mouse: KEYS %02X %02X %02X %02X %02X %02X %02X %02X %02X",
-             data[0], data[1], data[2], data[3], data[4], data[5], data[6], data[7], data[8]);
-    if (size == 8)
-      printk(KERN_INFO "hid-asus-mouse: KEYS %02X %02X %02X %02X %02X %02X %02X %02X",
-             data[0], data[1], data[2], data[3], data[4], data[5], data[6], data[7]);
-#endif
-
-    offset = 3;
-    if (size == ASUS_MOUSE_KEYS_ARRAY_EVENT2_SIZE)
-      offset--;
-
-		for (; offset < size; offset++) {
-			code = data[offset];
-			if (!code)
-				continue;
-			i = ASUS_MOUSE_DATA_KEY_STATE_NUM - (code / ASUS_MOUSE_DATA_KEY_STATE_BITS) - 1;
-			bitmask[i] |= 1 << (code % ASUS_MOUSE_DATA_KEY_STATE_BITS);
-		}
-    break;
-
   case ASUS_MOUSE_KEYS_BITMASK_EVENT_SIZE:
     /* build bitmask from event data */
 #ifdef ASUS_MOUSE_DEBUG
 		printk(KERN_INFO "hid-asus-mouse: KEYS %02X %02X %02X %02X %02X %02X %02X %02X",
            data[0], data[1], data[2], data[3], data[4], data[5], data[6], data[7]);
-		printk(KERN_INFO "hid-asus-mouse: KEYS %02X %02X %02X %02X %02X %02X %02X %02X %02X",
+		printk(KERN_INFO "                     %02X %02X %02X %02X %02X %02X %02X %02X %02X",
            data[8], data[9], data[10], data[11], data[12], data[13], data[14], data[15], data[16]);
 #endif
 
@@ -146,6 +136,27 @@ static void asus_mouse_handle_keyboard(struct asus_mouse_data *drv_data, u8 *dat
     break;
 
   default:
+    /* build bitmask from array of active key codes */
+#ifdef ASUS_MOUSE_DEBUG
+    if (size == 9)
+      printk(KERN_INFO "hid-asus-mouse: KEYS %02X %02X %02X %02X %02X %02X %02X %02X %02X",
+             data[0], data[1], data[2], data[3], data[4], data[5], data[6], data[7], data[8]);
+    if (size == 8)
+      printk(KERN_INFO "hid-asus-mouse: KEYS %02X %02X %02X %02X %02X %02X %02X %02X",
+             data[0], data[1], data[2], data[3], data[4], data[5], data[6], data[7]);
+#endif
+
+    offset = 3;
+    if (size == 8)
+      offset--;
+
+		for (; offset < size; offset++) {
+			code = data[offset];
+			if (!code)
+				continue;
+			i = ASUS_MOUSE_DATA_KEY_STATE_NUM - (code / ASUS_MOUSE_DATA_KEY_STATE_BITS) - 1;
+			bitmask[i] |= 1 << (code % ASUS_MOUSE_DATA_KEY_STATE_BITS);
+		}
     break;
 	}
 
@@ -217,6 +228,34 @@ static void asus_mouse_handle_keyboard(struct asus_mouse_data *drv_data, u8 *dat
 		drv_data->key_state[i] = bitmask[i];
 }
 
+static void asus_mouse_handle_joystick(struct asus_mouse_data *drv_data, u8 *data, int size)
+{
+	int x, y;
+  bool activated = false;
+
+#ifdef ASUS_MOUSE_DEBUG
+  printk(KERN_INFO "hid-asus-mouse: JOYS %02X %02X %02X %02X",
+         data[0], data[1], data[2], data[3]);
+#endif
+  /* 0...255 -> -127...127 */
+  x = data[0] - 128;
+  y = data[1] - 128;
+
+  if (x > -ASUS_MOUSE_JOYSTICK_DEADZONE && x < ASUS_MOUSE_JOYSTICK_DEADZONE)
+    x = 0;
+  if (y > -ASUS_MOUSE_JOYSTICK_DEADZONE && y < ASUS_MOUSE_JOYSTICK_DEADZONE)
+    y = 0;
+
+  if (!asus_mouse_joystick.x && !asus_mouse_joystick.y && (x || y))
+    activated = true;
+
+  asus_mouse_joystick.x = x;
+  asus_mouse_joystick.y = y;
+
+  if (activated)
+    input_repeat_key(NULL);
+}
+
 static int asus_mouse_raw_event(struct hid_device *hdev,
                                 struct hid_report *report, u8 *data, int size)
 {
@@ -229,17 +268,26 @@ static int asus_mouse_raw_event(struct hid_device *hdev,
 	iface = to_usb_interface(hdev->dev.parent);
 
 #ifdef ASUS_MOUSE_DEBUG
-  printk(KERN_INFO "hid-asus-mouse: RAW FROM=%d SIZE=%d",
-         iface->cur_altsetting->desc.bInterfaceProtocol, size);
+  printk(KERN_INFO "hid-asus-mouse: RAW FROM=%d SIZE=%d TYPE=%d APP=%d",
+         iface->cur_altsetting->desc.bInterfaceProtocol, size,
+         report->type, report->application);
+
+  for (int i = 0; i < report->maxfield; i++) {
+    printk(KERN_INFO "hid-asus-mouse: FLD %d PHY=%d LOG=%d APP=%d",
+           i, report->field[i]->physical, report->field[i]->logical,
+           report->field[i]->application);
+  }
 #endif
 
-  switch(iface->cur_altsetting->desc.bInterfaceProtocol) {
-  case 0:  /* keyboard */
-  case 1:  /* keyboard on some mice */
+  switch(report->application) {
+  case HID_GD_MOUSE:
+    asus_mouse_handle_mouse(drv_data, data, size);
+    break;
+  case HID_GD_KEYBOARD:
     asus_mouse_handle_keyboard(drv_data, data, size);
     break;
-  case 2:  /* mouse */
-    asus_mouse_handle_mouse(drv_data, data, size);
+  case HID_GD_GAMEPAD:
+    asus_mouse_handle_joystick(drv_data, data, size);
     break;
   default:
     break;
@@ -304,7 +352,8 @@ static const struct hid_device_id asus_mouse_devices[] = {
 	{ HID_USB_DEVICE(USB_VENDOR_ID_ASUSTEK, USB_DEVICE_ID_ASUSTEK_ROG_BUZZARD) },
 	{ HID_USB_DEVICE(USB_VENDOR_ID_ASUSTEK, USB_DEVICE_ID_ASUSTEK_ROG_CHAKRAM_RF) },
 	{ HID_USB_DEVICE(USB_VENDOR_ID_ASUSTEK, USB_DEVICE_ID_ASUSTEK_ROG_CHAKRAM_USB) },
-	{ HID_USB_DEVICE(USB_VENDOR_ID_ASUSTEK, USB_DEVICE_ID_ASUSTEK_ROG_CHAKRAM_X) },
+	{ HID_USB_DEVICE(USB_VENDOR_ID_ASUSTEK, USB_DEVICE_ID_ASUSTEK_ROG_CHAKRAM_X_RF) },
+	{ HID_USB_DEVICE(USB_VENDOR_ID_ASUSTEK, USB_DEVICE_ID_ASUSTEK_ROG_CHAKRAM_X_USB) },
 	{ HID_USB_DEVICE(USB_VENDOR_ID_ASUSTEK, USB_DEVICE_ID_ASUSTEK_ROG_GLADIUS2) },
 	{ HID_USB_DEVICE(USB_VENDOR_ID_ASUSTEK, USB_DEVICE_ID_ASUSTEK_ROG_GLADIUS2_CORE) },
 	{ HID_USB_DEVICE(USB_VENDOR_ID_ASUSTEK, USB_DEVICE_ID_ASUSTEK_ROG_GLADIUS2_ORIGIN) },
@@ -346,6 +395,9 @@ static int __init asus_mouse_init(void)
 {
   int ret;
 	pr_info("hid-asus-mouse: loading ASUS mouse driver\n");
+
+  asus_mouse_joystick.x = 0;
+  asus_mouse_joystick.y = 0;
 
   asus_mouse_input = input_allocate_device();
   if (!asus_mouse_input) {
