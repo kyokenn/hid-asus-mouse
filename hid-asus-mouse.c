@@ -50,7 +50,8 @@ static void input_repeat_key(struct timer_list *t)
     mod_timer(&asus_mouse_input->timer, jiffies + msecs_to_jiffies(ms));
 }
 
-static void asus_mouse_handle_mouse(struct asus_mouse_data *drv_data, u8 *data, int size)
+static void asus_mouse_handle_mouse(
+    struct asus_mouse_data *drv_data, struct hid_report *report, u8 *data, int size)
 {
   s8 btn = 0;
   s8 whl = 0;
@@ -61,6 +62,9 @@ static void asus_mouse_handle_mouse(struct asus_mouse_data *drv_data, u8 *data, 
   if (size == 6) {
     printk(KERN_INFO "hid-asus-mouse: MOUSE %02X %02X %02X %02X %02X %02X",
            data[0], data[1], data[2], data[3], data[4], data[5]);
+  } else if (size == 7) {
+    printk(KERN_INFO "hid-asus-mouse: MOUSE %02X %02X %02X %02X %02X %02X %02X",
+           data[0], data[1], data[2], data[3], data[4], data[5], data[6]);
   } else if (size == 11) {
     printk(KERN_INFO "hid-asus-mouse: MOUSE %02X %02X %02X %02X %02X %02X %02X %02X",
            data[0], data[1], data[2], data[3], data[4], data[5], data[6], data[7]);
@@ -75,6 +79,13 @@ static void asus_mouse_handle_mouse(struct asus_mouse_data *drv_data, u8 *data, 
     x = data[1] | (u16)data[2] << 8;
     y = data[3] | (u16)data[4] << 8;
     whl = data[5];
+    break;
+
+  case 7:
+    btn = data[5];
+    x = data[1] | (u16)data[2] << 8;
+    y = data[3] | (u16)data[4] << 8;
+    whl = data[6];
     break;
 
   case 11:
@@ -103,7 +114,8 @@ static void asus_mouse_handle_mouse(struct asus_mouse_data *drv_data, u8 *data, 
   input_sync(drv_data->input);
 }
 
-static void asus_mouse_handle_keyboard(struct asus_mouse_data *drv_data, u8 *data, int size)
+static void asus_mouse_handle_keyboard(
+    struct asus_mouse_data *drv_data, struct hid_report *report, u8 *data, int size)
 {
 	int i, bit, code, asus_code, key_code, offset;
   u32 bitmask[ASUS_MOUSE_DATA_KEY_STATE_NUM];
@@ -228,7 +240,8 @@ static void asus_mouse_handle_keyboard(struct asus_mouse_data *drv_data, u8 *dat
 		drv_data->key_state[i] = bitmask[i];
 }
 
-static void asus_mouse_handle_joystick(struct asus_mouse_data *drv_data, u8 *data, int size)
+static void asus_mouse_handle_joystick(
+    struct asus_mouse_data *drv_data, struct hid_report *report, u8 *data, int size)
 {
 	int x, y;
   bool activated = false;
@@ -237,9 +250,19 @@ static void asus_mouse_handle_joystick(struct asus_mouse_data *drv_data, u8 *dat
   printk(KERN_INFO "hid-asus-mouse: JOYS %02X %02X %02X %02X",
          data[0], data[1], data[2], data[3]);
 #endif
+
   /* 0...255 -> -127...127 */
-  x = data[0] - 128;
-  y = data[1] - 128;
+  switch(size) {
+  case 5:
+    x = data[1] - 128;
+    y = data[2] - 128;
+    break;
+
+  default:
+    x = data[0] - 128;
+    y = data[1] - 128;
+    break;
+  }
 
   if (x > -ASUS_MOUSE_JOYSTICK_DEADZONE && x < ASUS_MOUSE_JOYSTICK_DEADZONE)
     x = 0;
@@ -256,38 +279,41 @@ static void asus_mouse_handle_joystick(struct asus_mouse_data *drv_data, u8 *dat
     input_repeat_key(NULL);
 }
 
-static int asus_mouse_raw_event(struct hid_device *hdev,
-                                struct hid_report *report, u8 *data, int size)
+static int asus_mouse_raw_event(
+    struct hid_device *hdev, struct hid_report *report, u8 *data, int size)
 {
-  struct usb_interface *iface;
+  struct usb_interface *iface = NULL;
 
 	struct asus_mouse_data *drv_data = hid_get_drvdata(hdev);
 	if (!drv_data)
 		return 0;
 
-	iface = to_usb_interface(hdev->dev.parent);
+  if (hdev->dev.parent != NULL)
+    iface = to_usb_interface(hdev->dev.parent);
 
 #ifdef ASUS_MOUSE_DEBUG
   printk(KERN_INFO "hid-asus-mouse: RAW FROM=%d SIZE=%d TYPE=%d APP=%d",
-         iface->cur_altsetting->desc.bInterfaceProtocol, size,
-         report->type, report->application);
+         (iface != NULL) ? iface->cur_altsetting->desc.bInterfaceProtocol : 0,
+         size, report->type, report->application);
 
   for (int i = 0; i < report->maxfield; i++) {
     printk(KERN_INFO "hid-asus-mouse: FLD %d PHY=%d LOG=%d APP=%d",
            i, report->field[i]->physical, report->field[i]->logical,
            report->field[i]->application);
+    /* for (int j = 0; j < report->field[i]->maxusage; j++) */
+    /*   hid_resolv_usage(report->field[i]->usage[j].hid); */
   }
 #endif
 
   switch(report->application) {
   case HID_GD_MOUSE:
-    asus_mouse_handle_mouse(drv_data, data, size);
+    asus_mouse_handle_mouse(drv_data, report, data, size);
     break;
   case HID_GD_KEYBOARD:
-    asus_mouse_handle_keyboard(drv_data, data, size);
+    asus_mouse_handle_keyboard(drv_data, report, data, size);
     break;
   case HID_GD_GAMEPAD:
-    asus_mouse_handle_joystick(drv_data, data, size);
+    asus_mouse_handle_joystick(drv_data, report, data, size);
     break;
   default:
     break;
@@ -352,6 +378,7 @@ static const struct hid_device_id asus_mouse_devices[] = {
 	{ HID_USB_DEVICE(USB_VENDOR_ID_ASUSTEK, USB_DEVICE_ID_ASUSTEK_ROG_BUZZARD) },
 	{ HID_USB_DEVICE(USB_VENDOR_ID_ASUSTEK, USB_DEVICE_ID_ASUSTEK_ROG_CHAKRAM_RF) },
 	{ HID_USB_DEVICE(USB_VENDOR_ID_ASUSTEK, USB_DEVICE_ID_ASUSTEK_ROG_CHAKRAM_USB) },
+	{ HID_BLUETOOTH_DEVICE(USB_VENDOR_ID_ASUSTEK, USB_DEVICE_ID_ASUSTEK_ROG_CHAKRAM_X_BT) },
 	{ HID_USB_DEVICE(USB_VENDOR_ID_ASUSTEK, USB_DEVICE_ID_ASUSTEK_ROG_CHAKRAM_X_RF) },
 	{ HID_USB_DEVICE(USB_VENDOR_ID_ASUSTEK, USB_DEVICE_ID_ASUSTEK_ROG_CHAKRAM_X_USB) },
 	{ HID_USB_DEVICE(USB_VENDOR_ID_ASUSTEK, USB_DEVICE_ID_ASUSTEK_ROG_GLADIUS2) },
@@ -361,11 +388,8 @@ static const struct hid_device_id asus_mouse_devices[] = {
 	{ HID_USB_DEVICE(USB_VENDOR_ID_ASUSTEK, USB_DEVICE_ID_ASUSTEK_ROG_GLADIUS3) },
 	{ HID_USB_DEVICE(USB_VENDOR_ID_ASUSTEK, USB_DEVICE_ID_ASUSTEK_ROG_GLADIUS3_WIRELESS) },
 	{ HID_USB_DEVICE(USB_VENDOR_ID_ASUSTEK, USB_DEVICE_ID_ASUSTEK_ROG_GLADIUS3_WIRELESS_AIMPOINT_RF) },
-  { HID_USB_DEVICE(USB_VENDOR_ID_ASUSTEK, USB_DEVICE_ID_ASUSTEK_ROG_GLADIUS3_WIRELESS_AIMPOINT_USB) },
 	{ HID_USB_DEVICE(USB_VENDOR_ID_ASUSTEK, USB_DEVICE_ID_ASUSTEK_ROG_KERIS_WIRELESS_RF) },
 	{ HID_USB_DEVICE(USB_VENDOR_ID_ASUSTEK, USB_DEVICE_ID_ASUSTEK_ROG_KERIS_WIRELESS_USB) },
-  { HID_USB_DEVICE(USB_VENDOR_ID_ASUSTEK, USB_DEVICE_ID_ASUSTEK_ROG_KERIS_WIRELESS_AIMPOINT_RF) },
-  { HID_USB_DEVICE(USB_VENDOR_ID_ASUSTEK, USB_DEVICE_ID_ASUSTEK_ROG_KERIS_WIRELESS_AIMPOINT_USB) },
 	{ HID_USB_DEVICE(USB_VENDOR_ID_ASUSTEK, USB_DEVICE_ID_ASUSTEK_ROG_PUGIO) },
 	{ HID_USB_DEVICE(USB_VENDOR_ID_ASUSTEK, USB_DEVICE_ID_ASUSTEK_ROG_PUGIO2_RF) },
 	{ HID_USB_DEVICE(USB_VENDOR_ID_ASUSTEK, USB_DEVICE_ID_ASUSTEK_ROG_PUGIO2_USB) },
@@ -379,6 +403,9 @@ static const struct hid_device_id asus_mouse_devices[] = {
 	{ HID_USB_DEVICE(USB_VENDOR_ID_ASUSTEK, USB_DEVICE_ID_ASUSTEK_ROG_STRIX_IMPACT2_WIRELESS_RF) },
 	{ HID_USB_DEVICE(USB_VENDOR_ID_ASUSTEK, USB_DEVICE_ID_ASUSTEK_ROG_STRIX_IMPACT2_WIRELESS_USB) },
 	{ HID_USB_DEVICE(USB_VENDOR_ID_ASUSTEK, USB_DEVICE_ID_ASUSTEK_TUF_GAMING_M3) },
+  { HID_USB_DEVICE(USB_VENDOR_ID_ASUSTEK, USB_DEVICE_ID_ASUSTEK_ROG_GLADIUS3_WIRELESS_AIMPOINT_USB) },
+  { HID_USB_DEVICE(USB_VENDOR_ID_ASUSTEK, USB_DEVICE_ID_ASUSTEK_ROG_KERIS_WIRELESS_AIMPOINT_RF) },
+  { HID_USB_DEVICE(USB_VENDOR_ID_ASUSTEK, USB_DEVICE_ID_ASUSTEK_ROG_KERIS_WIRELESS_AIMPOINT_USB) },
 	{ }
 };
 MODULE_DEVICE_TABLE(hid, asus_mouse_devices);

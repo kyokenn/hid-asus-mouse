@@ -2,7 +2,7 @@ obj-m+=hid-asus-mouse.o
 KERNELDIR?=/lib/modules/$(shell uname -r)/build
 DRIVERDIR?=$(shell pwd)
 
-VERSION=0.2.0
+VERSION=0.2.1
 SRC=\
 	Makefile \
 	README.md \
@@ -56,6 +56,9 @@ rpm: \
 	~/rpmbuild/SPECS/hid-asusmouse-kmod-common.spec
 	rpmbuild -bb hid-asusmouse-kmod.spec
 	rpmbuild -bb hid-asusmouse-kmod-common.spec
+
+builddep: \
+	dnf install kmodtool
 
 deb: ../$(ARCHIVE)
 	debuild -uc -us
