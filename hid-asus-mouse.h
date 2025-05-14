@@ -40,12 +40,14 @@
 #define USB_DEVICE_ID_ASUSTEK_ROG_STRIX_IMPACT2_WIRELESS_USB 0x1947
 #define USB_DEVICE_ID_ASUSTEK_TUF_GAMING_M3 0x1910
 
-/* #define ASUS_MOUSE_DEBUG 1 */
+#define ASUS_MOUSE_DEBUG 1
 
 #define ASUS_MOUSE_KEYS_BITMASK_EVENT_SIZE 17
 
 #define ASUS_MOUSE_MOUSE_WHEEL_RES 120  /* generic mouse wheel resolution */
-#define ASUS_MOUSE_KP_WHEEL_RES 30  /* keypad emulated wheel resolution */
+#define ASUS_MOUSE_KP_WHEEL_RES_MIN 10  /* keypad emulated wheel resolution min */
+#define ASUS_MOUSE_KP_WHEEL_RES_MAX 100  /* keypad emulated wheel resolution max */
+#define ASUS_MOUSE_KP_WHEEL_TIME_NS 3000000000
 #define ASUS_MOUSE_JOYSTICK_DEADZONE 16
 
 #define ASUS_MOUSE_DATA_KEY_STATE_BITS 32  /* size of "key_state" item in bits */
@@ -55,9 +57,10 @@ struct asus_mouse_data {
 	__u32 key_state[ASUS_MOUSE_DATA_KEY_STATE_NUM];
 };
 
-struct asus_mouse_joystick {
-  int x;
-	int y;
+struct asus_mouse_state {
+	int joystick_x;
+	int joystick_y;
+	u64 ktime_start;
 };
 
 #define ASUS_MOUSE_MAPPING_SIZE 98

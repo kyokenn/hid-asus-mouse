@@ -9,7 +9,7 @@
 # name should have a -kmod suffix
 Name: hid-asusmouse-kmod
 
-Version:        0.2.1
+Version:        0.2.2
 Release:        1%{?dist}.1
 Summary:        ASUS mouse HID kernel module
 

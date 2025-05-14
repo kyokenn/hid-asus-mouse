@@ -12,9 +12,8 @@ Features
 
 * Single virtual input device for mouse and keyboard event generation,
 so they doesn't conflict with each other.
+* Handles keyboard events.
 * Smooth wheel emulation using keypad keys: KEY_KP2, KEY_KP4, KEY_KP6, KEY_KP8.
-* Handles keyboard events from incompatible with native HID devices
-(old Gladius II generation and earlier mice in RF mode).
 
 
 Supported devices
@@ -34,18 +33,4 @@ sudo dnf build-dep hid-asusmouse-kmod.spec
 Build RPM package:
 ```
 make rpm
-```
-
-
-Building DEB
-------------
-
-Install build dependencies:
-```
-sudo apt build-dep .
-```
-
-Build DEB package:
-```
-make deb
 ```
