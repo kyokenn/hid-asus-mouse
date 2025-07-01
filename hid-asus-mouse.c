@@ -493,7 +493,7 @@ static void __exit asus_mouse_exit(void) {
 	pr_info("hid-asus-mouse: unloading ASUS mouse driver\n");
 
 	asus_mouse_input->repeat_key = 0;
-	del_timer(&asus_mouse_input->timer);
+	timer_delete(&asus_mouse_input->timer);
 
 	hid_unregister_driver(&asus_mouse_driver);
 	input_unregister_device(asus_mouse_input);
